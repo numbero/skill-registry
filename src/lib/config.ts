@@ -43,6 +43,14 @@ export function getDefaultGlobalConfig(): GlobalConfig {
         windsurf: {
           path: '.windsurf/rules',
           description: 'Windsurf IDE'
+        },
+        'agent-generic': {
+          path: '.agents/skills',
+          description: 'Generic Agent (.agents standard)'
+        },
+        qoder: {
+          path: '.qoder/skills',
+          description: 'Qoder AI'
         }
       }
     },
