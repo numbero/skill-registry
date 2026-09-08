@@ -1,0 +1,63 @@
+{
+  "name": "skill-registry",
+  "version": "1.0.0",
+  "description": "CLI tool for managing AI Agent Skills from Git and local sources",
+  "keywords": [
+    "cli",
+    "ai",
+    "skills",
+    "agent",
+    "management"
+  ],
+  "homepage": "https://github.com/user/skill-registry#readme",
+  "bugs": {
+    "url": "https://github.com/user/skill-registry/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/user/skill-registry.git"
+  },
+  "license": "MIT",
+  "author": "",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "skill-registry": "./bin/skill-registry"
+  },
+  "files": [
+    "bin",
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "echo \"Error: no lint specified\" && exit 1",
+    "prepare": "npm run build"
+  },
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "commander": "^11.1.0",
+    "fs-extra": "^11.2.0",
+    "inquirer": "^9.2.0",
+    "js-yaml": "^4.1.0",
+    "ora": "^7.0.0",
+    "simple-git": "^3.22.0"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "@types/inquirer": "^9.0.7",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

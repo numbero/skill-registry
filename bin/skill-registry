@@ -1,0 +1,7 @@
+#!/usr/bin/env node
+
+/**
+ * Skill Registry CLI
+ */
+
+require('../dist/cli.js');
