@@ -6,7 +6,33 @@
 
 ## 简介
 
-Skill Router 是一个专业的命令行工具，用于统一管理来自 Git 仓库和本地目录的 AI Agent Skills，实现跨项目的 Skill 拉取与部署。
+Skill Registry 是一个专业的命令行工具，用于统一管理来自 Git 仓库和本地目录的 AI Agent Skills，实现跨项目的 Skill 拉取与部署。
+
+---
+
+## ✅ 实现状态
+
+**当前版本**: v1.0.0
+
+**已实现功能**:
+- ✅ 核心架构（纯文件系统，无数据库）
+- ✅ Skill 注册（Git 和本地源）
+- ✅ Skill 管理（添加、移除、列表、更新）
+- ✅ Group 管理（创建、添加、删除、列表）
+- ✅ Target 管理（全局预定义、自定义）
+- ✅ 项目管理（初始化、配置、拉取）
+- ✅ 单向增量拉取（只添加，不删除）
+- ✅ 自动 Git 检测
+- ✅ 全局配置管理
+- ✅ 状态查看
+
+**技术栈**:
+- TypeScript
+- Node.js
+- Commander.js (CLI)
+- simple-git (Git 操作)
+- js-yaml (YAML 解析)
+- chalk (终端输出)
 
 ---
 
@@ -21,13 +47,34 @@ Skill Router 是一个专业的命令行工具，用于统一管理来自 Git �
 
 ---
 
-## 快速开始
+## 安装
 
-### 安装
+### 从 npm 安装（即将发布）
 
 ```bash
 npm install -g skill-registry
 ```
+
+### 从源码构建
+
+```bash
+# 克隆仓库
+git clone https://github.com/user/skill-registry.git
+cd skill-registry
+
+# 安装依赖
+npm install
+
+# 构建
+npm run build
+
+# 全局链接（开发模式）
+npm link
+```
+
+---
+
+## 快速开始
 
 ### 新项目快速启动
 
@@ -36,11 +83,15 @@ npm install -g skill-registry
 cd my-project
 skill-registry project init
 
-# 2. 添加 Skills
-skill-registry add drawio
-skill-registry add pua
+# 2. 注册 Skills
+skill-registry skill add git+https://github.com/user/skills.git#drawio
+skill-registry skill add /path/to/local/skill
 
-# 3. 拉取
+# 3. 添加到项目
+skill-registry add drawio
+skill-registry add my-local-skill
+
+# 4. 拉取
 skill-registry pull
 ```
 
