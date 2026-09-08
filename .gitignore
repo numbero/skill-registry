@@ -21,3 +21,10 @@ Thumbs.db
 # Test
 coverage/
 .nyc_output/
+
+# Skill Registry - Local config and data
+.claude/
+.skill-registry/
+
+# Claude Code settings
+.claude/
