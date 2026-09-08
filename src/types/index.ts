@@ -19,6 +19,9 @@ export interface SkillInfo {
 }
 
 export interface GlobalConfig {
+  registry?: {
+    path?: string;  // Custom skills storage path
+  };
   defaults: {
     targets: Record<string, TargetConfig>;
   };

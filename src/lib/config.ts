@@ -7,6 +7,7 @@ import fs from 'fs-extra';
 import yaml from 'js-yaml';
 import os from 'os';
 import { GlobalConfig, ProjectConfig, TargetConfig } from '../types';
+import { clearSkillsPathCache } from './storage';
 
 export function getGlobalConfigPath(): string {
   return path.join(os.homedir(), '.skill-registry', 'global.yaml');
@@ -87,6 +88,9 @@ export async function saveGlobalConfig(config: GlobalConfig): Promise<void> {
   });
 
   await fs.writeFile(configPath, content);
+
+  // Clear skills path cache in case registry.path changed
+  clearSkillsPathCache();
 }
 
 /**

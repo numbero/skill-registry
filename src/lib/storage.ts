@@ -5,22 +5,67 @@
 import path from 'path';
 import fs from 'fs-extra';
 import os from 'os';
-import { SkillInfo } from '../types';
+import yaml from 'js-yaml';
+import { SkillInfo, GlobalConfig } from '../types';
 import { parseFrontmatter } from './utils';
 import { getGitRemote, getGitVersion, getGitBranch, isGitRepo } from './git';
 
+// Cache for custom skills path
+let customSkillsPath: string | null = null;
+
 /**
- * Get central registry path
+ * Get central registry path (always default, where global.yaml lives)
  */
 export function getRegistryPath(): string {
   return path.join(os.homedir(), '.skill-registry');
 }
 
 /**
- * Get skills directory path
+ * Get skills directory path (supports custom path)
  */
 export function getSkillsPath(): string {
-  return path.join(getRegistryPath(), 'skills');
+  // Return cached path if available
+  if (customSkillsPath) {
+    return customSkillsPath;
+  }
+
+  // Default path
+  const defaultPath = path.join(getRegistryPath(), 'skills');
+
+  // Try to load custom path from config
+  try {
+    const configPath = getGlobalConfigPath();
+    if (fs.existsSync(configPath)) {
+      const content = fs.readFileSync(configPath, 'utf-8');
+      const config = yaml.load(content) as GlobalConfig;
+
+      if (config.registry?.path) {
+        // Resolve custom path (handle ~ and relative paths)
+        let customPath = config.registry.path;
+
+        if (customPath.startsWith('~/')) {
+          customPath = path.join(os.homedir(), customPath.slice(2));
+        } else if (!path.isAbsolute(customPath)) {
+          // Relative paths are resolved from registry directory
+          customPath = path.resolve(getRegistryPath(), customPath);
+        }
+
+        customSkillsPath = customPath;
+        return customSkillsPath;
+      }
+    }
+  } catch (error) {
+    // If config loading fails, use default
+  }
+
+  return defaultPath;
+}
+
+/**
+ * Clear skills path cache (used when config changes)
+ */
+export function clearSkillsPathCache(): void {
+  customSkillsPath = null;
 }
 
 /**
