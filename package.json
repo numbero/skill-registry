@@ -1,5 +1,5 @@
 {
-  "name": "skill-registry",
+  "name": "@numbero/skill-registry",
   "version": "1.0.0",
   "description": "CLI tool for managing AI Agent Skills from Git and local sources",
   "keywords": [
@@ -9,16 +9,16 @@
     "agent",
     "management"
   ],
-  "homepage": "https://github.com/user/skill-registry#readme",
+  "homepage": "https://github.com/numbero/skill-registry#readme",
   "bugs": {
-    "url": "https://github.com/user/skill-registry/issues"
+    "url": "https://github.com/numbero/skill-registry/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/user/skill-registry.git"
+    "url": "git+https://github.com/numbero/skill-registry.git"
   },
   "license": "MIT",
-  "author": "",
+  "author": "numbero",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
@@ -58,6 +58,7 @@
     "node": ">=18.0.0"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
   }
 }
