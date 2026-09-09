@@ -8,6 +8,7 @@ import yaml from 'js-yaml';
 import os from 'os';
 import { GlobalConfig, ProjectConfig, TargetConfig } from '../types';
 import { clearSkillsPathCache } from './storage';
+import { detectTargets } from './detect';
 
 export function getGlobalConfigPath(): string {
   return path.join(os.homedir(), '.skill-registry', 'global.yaml');
@@ -171,9 +172,17 @@ export async function initProjectConfig(projectDir?: string): Promise<void> {
 }
 
 /**
- * Get project targets (merge global defaults with project config)
+ * Get project targets with detection details.
+ *
+ * Resolution order (union semantics):
+ * 1. Explicit targets from project config.yaml (win on name conflicts)
+ * 2. Auto-detected global preset targets (marker dirs present in project root)
+ * 3. Fallback to global default_target when the union is empty
  */
-export async function getProjectTargets(projectDir?: string): Promise<Record<string, TargetConfig>> {
+export async function getProjectTargetDetails(projectDir?: string): Promise<{
+  targets: Record<string, TargetConfig>;
+  detected: string[];
+}> {
   // Load global config
   const globalConfig = await loadGlobalConfig();
 
@@ -181,26 +190,39 @@ export async function getProjectTargets(projectDir?: string): Promise<Record<str
   const baseDir = projectDir || process.cwd();
   if (!isProjectDir(baseDir)) {
     // Not a project, return empty
-    return {};
+    return { targets: {}, detected: [] };
   }
 
   // Load project config
   const projectConfig = await loadProjectConfig(projectDir);
+  const explicit = projectConfig.targets || {};
 
-  // If project has targets, use them
-  if (projectConfig.targets && Object.keys(projectConfig.targets).length > 0) {
-    return projectConfig.targets;
+  // Auto-detect matching global preset targets
+  const detectedConfigs = detectTargets(baseDir, globalConfig.defaults.targets);
+
+  // Union: explicit config wins on conflicts
+  const targets: Record<string, TargetConfig> = { ...detectedConfigs, ...explicit };
+  const detected = Object.keys(detectedConfigs).filter(name => !explicit[name]);
+
+  if (Object.keys(targets).length === 0) {
+    // Nothing explicit and nothing detected: fall back to global default
+    const defaultTargetName = globalConfig.settings.default_target;
+    const defaultTarget = globalConfig.defaults.targets[defaultTargetName];
+
+    if (defaultTarget) {
+      return { targets: { [defaultTargetName]: defaultTarget }, detected: [] };
+    }
+
+    return { targets: {}, detected: [] };
   }
 
-  // Otherwise, use global default
-  const defaultTargetName = globalConfig.settings.default_target;
-  const defaultTarget = globalConfig.defaults.targets[defaultTargetName];
+  return { targets, detected };
+}
 
-  if (!defaultTarget) {
-    return {};
-  }
-
-  return {
-    [defaultTargetName]: defaultTarget
-  };
+/**
+ * Get project targets (explicit config ∪ auto-detected presets)
+ */
+export async function getProjectTargets(projectDir?: string): Promise<Record<string, TargetConfig>> {
+  const { targets } = await getProjectTargetDetails(projectDir);
+  return targets;
 }

@@ -86,6 +86,12 @@ export function registerProjectCommand(program: Command): void {
 
         const result = await projectCore.pullProjectSkills();
 
+        // Display auto-detected targets
+        if (result.detected.length > 0) {
+          console.log(chalk.cyan(`Auto-detected targets: ${result.detected.join(', ')}`));
+          console.log();
+        }
+
         // Display pulled
         if (result.pulled.length > 0) {
           console.log(chalk.green('Pulled:'));
@@ -186,7 +192,7 @@ export function registerProjectCommand(program: Command): void {
       try {
         console.log(chalk.blue('\nProject Targets:\n'));
 
-        const { targets } = await projectCore.getProjectInfo();
+        const { targets, detected } = await projectCore.getProjectInfo();
 
         if (Object.keys(targets).length === 0) {
           console.log(chalk.gray('  No targets configured.\n'));
@@ -194,7 +200,8 @@ export function registerProjectCommand(program: Command): void {
         }
 
         for (const [name, config] of Object.entries(targets)) {
-          console.log(`  ${chalk.cyan(name.padEnd(20))}  ${config.path}`);
+          const autoMarker = detected.includes(name) ? chalk.magenta(' (auto-detected)') : '';
+          console.log(`  ${chalk.cyan(name.padEnd(20))}  ${config.path}${autoMarker}`);
           if (config.description) {
             console.log(chalk.gray(`  ${''.padEnd(20)}  ${config.description}`));
           }
@@ -216,7 +223,7 @@ export function registerProjectCommand(program: Command): void {
       try {
         console.log(chalk.blue('\nProject Configuration:\n'));
 
-        const { config, targets } = await projectCore.getProjectInfo();
+        const { config, targets, detected } = await projectCore.getProjectInfo();
 
         // Display targets
         console.log(chalk.cyan('Targets:'));
@@ -224,7 +231,8 @@ export function registerProjectCommand(program: Command): void {
           console.log(chalk.gray('  (none)'));
         } else {
           for (const [name, targetConfig] of Object.entries(targets)) {
-            console.log(chalk.gray(`  • ${name} → ${targetConfig.path}`));
+            const autoMarker = detected.includes(name) ? chalk.magenta(' (auto-detected)') : '';
+            console.log(chalk.gray(`  • ${name} → ${targetConfig.path}`) + autoMarker);
           }
         }
         console.log();
@@ -270,6 +278,9 @@ export function registerProjectCommand(program: Command): void {
     .action(async () => {
       try {
         const result = await projectCore.pullProjectSkills();
+        if (result.detected.length > 0) {
+          console.log(chalk.cyan(`Auto-detected targets: ${result.detected.join(', ')}`));
+        }
         console.log(chalk.green(`✓ Pulled ${result.pulled.length} skills, skipped ${result.skipped.length}\n`));
       } catch (error: any) {
         console.error(chalk.red(`Error: ${error.message}`));

@@ -115,6 +115,31 @@ Skill 的部署目标，定义了同步路径。例如：
 
 ---
 
+## 🎯 Target 自动识别
+
+`pull` 时会自动扫描当前项目目录，将命中"探测标记"的全局预设 Target 纳入部署范围，**无需手动 `project target add`**。
+
+探测标记直接取自 target `path` 的**第一级目录**：项目根目录下存在该目录即命中。例如 `cursor` 的 path 是 `.cursor/rules`，则项目里有 `.cursor/` 就会自动部署。
+
+| Target | path | 探测标记 |
+|---|---|---|
+| `claude-code` | `.claude/skills` | `.claude/` |
+| `cursor` | `.cursor/rules` | `.cursor/` |
+| `codex` | `.codex/skills` | `.codex/` |
+| `kiro-steering` | `.kiro/steering` | `.kiro/` |
+| `windsurf` | `.windsurf/rules` | `.windsurf/` |
+| `agent-generic` | `.agents/skills` | `.agents/` |
+| `qoder` | `.qoder/skills` | `.qoder/` |
+
+规则说明：
+- **并集语义**：最终 Target = 项目显式配置 ∪ 自动探测结果（同名时显式配置优先）
+- **兜底**：两者都为空时，回退到全局 `settings.default_target`
+- **家目录/绝对路径例外**：path 以 `~/` 开头或为绝对路径的 target（如 `claude-code-home`）不参与自动探测，必须显式添加
+- **自定义 target 零配置**：`target add` 的新 target 同样按此规则自动参与探测，无需额外配置
+- `pull` / `project show` / `project target list` 输出中会标注 `(auto-detected)`
+
+---
+
 ## 主要命令
 
 ### Skill 管理命令（全局）

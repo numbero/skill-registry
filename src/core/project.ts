@@ -9,7 +9,7 @@ import {
   loadProjectConfig,
   saveProjectConfig,
   initProjectConfig,
-  getProjectTargets
+  getProjectTargetDetails
 } from '../lib/config';
 import { loadGlobalConfig } from '../lib/config';
 import { getSkillPath, skillExists } from '../lib/storage';
@@ -165,12 +165,13 @@ export async function addProjectTarget(
 export async function pullProjectSkills(projectDir?: string): Promise<{
   pulled: string[];
   skipped: string[];
+  detected: string[];
 }> {
   // Load project config
   const config = await loadProjectConfig(projectDir);
 
-  // Get project targets
-  const targets = await getProjectTargets(projectDir);
+  // Get project targets (explicit ∪ auto-detected)
+  const { targets, detected } = await getProjectTargetDetails(projectDir);
 
   if (Object.keys(targets).length === 0) {
     throw new Error('No targets configured for this project.');
@@ -178,7 +179,8 @@ export async function pullProjectSkills(projectDir?: string): Promise<{
 
   const result = {
     pulled: [] as string[],
-    skipped: [] as string[]
+    skipped: [] as string[],
+    detected
   };
 
   // Pull each skill to each target
@@ -224,9 +226,10 @@ export async function pullProjectSkills(projectDir?: string): Promise<{
 export async function getProjectInfo(projectDir?: string): Promise<{
   config: ProjectConfig;
   targets: Record<string, { path: string; description?: string }>;
+  detected: string[];
 }> {
   const config = await loadProjectConfig(projectDir);
-  const targets = await getProjectTargets(projectDir);
+  const { targets, detected } = await getProjectTargetDetails(projectDir);
 
-  return { config, targets };
+  return { config, targets, detected };
 }
