@@ -4,52 +4,95 @@
 
 import { Command } from 'commander';
 import chalk from 'chalk';
-import * as skillCore from '../core/skill';
-import * as groupCore from '../core/group';
-import * as targetCore from '../core/target';
+import { detectScope } from '../lib/context';
+import { loadGlobalConfig, getGlobalConfigPath } from '../lib/config';
+import { getSkillsPath } from '../lib/storage';
 import * as projectCore from '../core/project';
-import { isProjectDir } from '../lib/config';
+import * as skillCore from '../core/skill';
 
 export function registerStatusCommand(program: Command): void {
   program
     .command('status')
-    .description('Show overall status (global + project if applicable)')
+    .description('Show complete status (project + global)')
     .action(async () => {
       try {
-        console.log(chalk.blue('\nSkill Registry Status:\n'));
+        const { isProject, projectDir } = detectScope();
 
-        // Global registry info
-        console.log(chalk.cyan('Global Registry:'));
+        // Show project status
+        if (isProject && projectDir) {
+          console.log(chalk.blue('\n📦 Project Status\n'));
+          console.log(chalk.gray(`  Directory: ${projectDir}`));
+          console.log();
 
-        const skills = await skillCore.listSkills();
-        const groups = await groupCore.listGroups();
-        const targets = await targetCore.listGlobalTargets();
+          const { config, targets, detected } = await projectCore.getProjectInfo();
 
-        const gitCount = skills.filter(s => s.is_git).length;
-        const localCount = skills.length - gitCount;
-
-        console.log(chalk.gray(`  Skills: ${skills.length} (${gitCount} git, ${localCount} local)`));
-        console.log(chalk.gray(`  Groups: ${Object.keys(groups).length}`));
-        console.log(chalk.gray(`  Targets: ${Object.keys(targets).length} predefined`));
-        console.log();
-
-        // Project info (if in project directory)
-        if (isProjectDir(process.cwd())) {
-          console.log(chalk.cyan('Current Project:'));
-
-          try {
-            const { config, targets: projectTargets } = await projectCore.getProjectInfo();
-
-            console.log(chalk.gray(`  Path: ${process.cwd()}`));
-            console.log(chalk.gray(`  Skills: ${config.skills.length}`));
-
-            const targetNames = Object.keys(projectTargets);
-            console.log(chalk.gray(`  Targets: ${targetNames.length} (${targetNames.join(', ')})`));
-
-            console.log();
-          } catch (error) {
-            console.log(chalk.gray('  (unable to load project info)\n'));
+          // Display targets
+          console.log(chalk.cyan('Targets:'));
+          if (Object.keys(targets).length === 0) {
+            console.log(chalk.gray('  (none)'));
+          } else {
+            for (const [name, targetConfig] of Object.entries(targets)) {
+              const autoMarker = detected.includes(name) ? chalk.magenta(' (auto-detected)') : '';
+              console.log(chalk.gray(`  • ${name} → ${targetConfig.path}`) + autoMarker);
+            }
           }
+          console.log();
+
+          // Display skills
+          console.log(chalk.cyan('Skills:'));
+          if (config.skills.length === 0) {
+            console.log(chalk.gray('  (none)'));
+          } else {
+            for (const skill of config.skills) {
+              console.log(chalk.gray(`  • ${skill}`));
+            }
+          }
+          console.log();
+        } else {
+          console.log(chalk.yellow('\n⚠️  Not in a skill-registry project\n'));
+        }
+
+        // Show global status
+        console.log(chalk.blue('\n🌐 Global Status\n'));
+
+        try {
+          const config = await loadGlobalConfig();
+          const skillsPath = getSkillsPath();
+
+          console.log(chalk.gray(`  Config: ${getGlobalConfigPath()}`));
+          console.log(chalk.gray(`  Skills: ${skillsPath}`));
+          console.log();
+
+          // Display default targets
+          console.log(chalk.cyan('Default Targets:'));
+          const targetCount = Object.keys(config.defaults.targets).length;
+          console.log(chalk.gray(`  ${targetCount} targets configured`));
+          console.log();
+
+          // Display groups
+          console.log(chalk.cyan('Groups:'));
+          const groupNames = Object.keys(config.groups);
+          if (groupNames.length === 0) {
+            console.log(chalk.gray('  (none)'));
+          } else {
+            console.log(chalk.gray(`  ${groupNames.length} groups`));
+            for (const name of groupNames) {
+              const skills = config.groups[name].skills;
+              console.log(chalk.gray(`  • ${name} (${skills.length} skills)`));
+            }
+          }
+          console.log();
+
+          // Display total skills in registry
+          const skills = await skillCore.listSkills();
+          console.log(chalk.cyan('Registry:'));
+          console.log(chalk.gray(`  ${skills.length} skills cached`));
+          console.log();
+
+        } catch (error: any) {
+          console.log(chalk.yellow('Global configuration not initialized.'));
+          console.log(chalk.gray('  Run: skill-registry init -g'));
+          console.log();
         }
 
       } catch (error: any) {

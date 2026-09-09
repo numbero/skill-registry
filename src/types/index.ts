@@ -34,11 +34,13 @@ export interface GlobalConfig {
 export interface ProjectConfig {
   targets?: Record<string, TargetConfig>;
   skills: string[];
+  groups?: Record<string, { skills?: string[] }>;
 }
 
 export interface TargetConfig {
   path: string;
   description?: string;
+  detect?: string[];
 }
 
 export interface GroupConfig {

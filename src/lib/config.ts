@@ -64,15 +64,18 @@ export function getDefaultGlobalConfig(): GlobalConfig {
 
 /**
  * Load global config
+ * Throws error if not initialized
  */
 export async function loadGlobalConfig(): Promise<GlobalConfig> {
   const configPath = getGlobalConfigPath();
 
-  // Create default config if not exists
+  // Check if initialized
   if (!fs.existsSync(configPath)) {
-    const defaultConfig = getDefaultGlobalConfig();
-    await saveGlobalConfig(defaultConfig);
-    return defaultConfig;
+    throw new Error(
+      `Global skill-registry not initialized.\n\n` +
+      `Run: skill-registry init -g\n` +
+      `Or: skill-registry init -g --path <custom-path>`
+    );
   }
 
   const content = await fs.readFile(configPath, 'utf-8');

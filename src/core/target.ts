@@ -3,7 +3,7 @@
  */
 
 import { TargetConfig } from '../types';
-import { loadGlobalConfig, saveGlobalConfig } from '../lib/config';
+import { loadGlobalConfig, saveGlobalConfig, getDefaultGlobalConfig } from '../lib/config';
 
 /**
  * Add global target
@@ -11,7 +11,8 @@ import { loadGlobalConfig, saveGlobalConfig } from '../lib/config';
 export async function addGlobalTarget(
   name: string,
   targetPath: string,
-  description?: string
+  description?: string,
+  detect?: string[]
 ): Promise<void> {
   // Load global config
   const config = await loadGlobalConfig();
@@ -24,7 +25,8 @@ export async function addGlobalTarget(
   // Add target
   config.defaults.targets[name] = {
     path: targetPath,
-    description: description
+    description: description,
+    detect: detect
   };
 
   // Save config
@@ -106,4 +108,37 @@ export async function getDefaultTarget(): Promise<string> {
   const config = await loadGlobalConfig();
 
   return config.settings.default_target;
+}
+
+/**
+ * Restore default target presets
+ * @param name - Optional specific target to restore
+ * @returns List of restored target names
+ */
+export async function restoreDefaultTargets(name?: string): Promise<string[]> {
+  const config = await loadGlobalConfig();
+  const defaults = getDefaultGlobalConfig().defaults.targets;
+
+  const restored: string[] = [];
+
+  if (name) {
+    // Restore specific target
+    if (!defaults[name]) {
+      throw new Error(`'${name}' is not a builtin preset target.`);
+    }
+
+    config.defaults.targets[name] = defaults[name];
+    restored.push(name);
+  } else {
+    // Restore all missing default targets
+    for (const [targetName, targetConfig] of Object.entries(defaults)) {
+      if (!config.defaults.targets[targetName]) {
+        config.defaults.targets[targetName] = targetConfig;
+        restored.push(targetName);
+      }
+    }
+  }
+
+  await saveGlobalConfig(config);
+  return restored;
 }

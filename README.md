@@ -12,7 +12,7 @@ Skill Registry 是一个专业的命令行工具，用于统一管理来自 Git 
 
 ## ✅ 实现状态
 
-**当前版本**: v1.0.0
+**当前版本**: v2.0.0
 
 **已实现功能**:
 - ✅ 核心架构（纯文件系统，无数据库）
@@ -25,6 +25,7 @@ Skill Registry 是一个专业的命令行工具，用于统一管理来自 Git 
 - ✅ 自动 Git 检测
 - ✅ 全局配置管理
 - ✅ 状态查看
+- ✅ 项目优先命令设计
 
 **技术栈**:
 - TypeScript
@@ -44,6 +45,7 @@ Skill Registry 是一个专业的命令行工具，用于统一管理来自 Git 
 - 🔄 **单向增量拉取**：只添加不删除，保护动态创建的 Skills
 - 🏷️ **Skill Groups**：按场景组织和管理 Skills
 - 🏠 **统一管理**：项目和家目录使用同一套机制
+- ⚡ **项目优先设计**：默认操作在项目级，全局操作需显式指定
 
 ---
 
@@ -76,22 +78,46 @@ npm link
 
 ## 快速开始
 
-### 新项目快速启动
+### 1. 全局初始化
 
 ```bash
-# 1. 初始化项目
+# 使用默认路径初始化
+skill-registry init -g
+
+# 使用自定义路径初始化
+skill-registry init -g --path /custom/skills/path
+```
+
+### 2. 项目初始化
+
+```bash
 cd my-project
-skill-registry project init
+skill-registry init
+```
 
-# 2. 注册 Skills
-skill-registry skill add git+https://github.com/user/skills.git#drawio
-skill-registry skill add /path/to/local/skill
+### 3. 注册 Skills
 
-# 3. 添加到项目
-skill-registry add drawio
-skill-registry add my-local-skill
+```bash
+# 从 Git 注册到全局 registry
+skill-registry skill add -g git+https://github.com/user/skills.git#drawio
 
-# 4. 拉取
+# 从本地目录注册
+skill-registry skill add -g /path/to/local/skill
+```
+
+### 4. 添加到项目
+
+```bash
+# 添加已注册的 skill
+skill-registry skill add drawio
+
+# 或使用 Group
+skill-registry group add web-dev
+```
+
+### 5. 拉取到 Targets
+
+```bash
 skill-registry pull
 ```
 
@@ -117,61 +143,124 @@ Skill 的部署目标，定义了同步路径。例如：
 
 ## 🎯 Target 自动识别
 
-`pull` 时会自动扫描当前项目目录，将命中"探测标记"的全局预设 Target 纳入部署范围，**无需手动 `project target add`**。
+`pull` 时会自动扫描当前项目目录，将命中"探测标记"的全局预设 Target 纳入部署范围，**无需手动添加**。
 
-探测标记直接取自 target `path` 的**第一级目录**：项目根目录下存在该目录即命中。例如 `cursor` 的 path 是 `.cursor/rules`，则项目里有 `.cursor/` 就会自动部署。
+仅识别项目根目录下的**隐藏目录**（如 `.claude/`），不依据 `CLAUDE.md`、`AGENTS.md` 等文件判断，避免误报。
 
-| Target | path | 探测标记 |
-|---|---|---|
-| `claude-code` | `.claude/skills` | `.claude/` |
-| `cursor` | `.cursor/rules` | `.cursor/` |
-| `codex` | `.codex/skills` | `.codex/` |
-| `kiro-steering` | `.kiro/steering` | `.kiro/` |
-| `windsurf` | `.windsurf/rules` | `.windsurf/` |
-| `agent-generic` | `.agents/skills` | `.agents/` |
-| `qoder` | `.qoder/skills` | `.qoder/` |
+| Target | 探测标记目录 |
+|---|---|
+| `claude-code` | `.claude/` |
+| `cursor` | `.cursor/` |
+| `codex` | `.codex/` |
+| `kiro-steering` | `.kiro/` |
+| `windsurf` | `.windsurf/` |
+| `agent-generic` | `.agents/` |
+| `qoder` | `.qoder/` |
 
 规则说明：
 - **并集语义**：最终 Target = 项目显式配置 ∪ 自动探测结果（同名时显式配置优先）
 - **兜底**：两者都为空时，回退到全局 `settings.default_target`
-- **家目录/绝对路径例外**：path 以 `~/` 开头或为绝对路径的 target（如 `claude-code-home`）不参与自动探测，必须显式添加
-- **自定义 target 零配置**：`target add` 的新 target 同样按此规则自动参与探测，无需额外配置
-- `pull` / `project show` / `project target list` 输出中会标注 `(auto-detected)`
+- **例外**：`claude-code-home` 不参与自动探测，必须显式添加
+- **自定义标记**：全局 Target 可通过 `detect` 字段自定义标记
 
 ---
 
-## 主要命令
+## 命令体系
 
-### Skill 管理命令（全局）
+### 设计理念
+
+**项目优先，-g 切换全局**
+
+- 默认操作作用域为项目级别
+- 全局操作需要显式指定 `-g` (或 `--global`) 标志
+- 符合 90% 使用场景都在项目内的实际情况
+
+---
+
+### 初始化命令
 
 ```bash
-skill-registry skill add <source>     # 注册 Skill
-skill-registry skill list             # 列出所有 Skills
-skill-registry skill update [name]    # 更新 Skill
+# 项目初始化
+init                            # 在当前目录创建 .skill-registry/config.yaml
+
+# 全局初始化
+init -g                         # 使用默认路径
+init -g --path <path>           # 使用自定义路径
 ```
 
-### Target 管理命令（全局）
+---
+
+### Skill 命令
 
 ```bash
-skill-registry target list            # 列出全局预定义 Targets
-skill-registry target add <name>      # 添加全局 Target
+# 项目级（默认）
+skill add <source>              # 添加 Skill 到项目
+skill list                      # 列出项目 Skills
+skill remove <skill>            # 从项目移除
+skill update                    # 更新项目 Skills
+
+# 全局级（需要 -g）
+skill add -g <source>           # 注册到全局 registry
+skill list -g                   # 列出全局 Skills
+skill remove -g <skill>         # 从全局删除
+skill update -g [name]          # 更新全局 Skill(s)
 ```
 
-### Group 管理命令（全局）
+---
+
+### Target 命令
 
 ```bash
-skill-registry group add <name>       # 创建 Group
-skill-registry group list             # 列出所有 Groups
+# 项目级（默认）
+target list                     # 列出项目 Targets
+target add <name>               # 添加 Target 到项目
+target remove <name>            # 从项目移除
+
+# 全局级（需要 -g）
+target list -g                  # 列出全局预设
+target add -g <name>            # 添加全局预设
+target remove -g <name>         # 删除全局预设
+target restore -g [name]        # 恢复默认预设
+target default -g <name>        # 设置默认 Target
 ```
 
-### 项目管理命令
+---
+
+### Group 命令
 
 ```bash
-skill-registry project init           # 初始化项目
-skill-registry add <skill>            # 添加 Skill
-skill-registry project target add <name>  # 添加 Target
-skill-registry project group add <name>   # 添加 Group
-skill-registry pull                   # 拉取 Skills
+# 项目级（默认）
+group list                      # 列出项目 Groups
+group add <group>               # 添加 Group 到项目
+group remove <group>            # 从项目移除
+
+# 全局级（需要 -g）
+group list -g                   # 列出全局 Groups
+group add -g <name>             # 创建全局 Group
+group remove -g <name>          # 删除全局 Group
+group skill add -g <group> <skill>      # 添加 Skill 到 Group
+group skill remove -g <group> <skill>   # 从 Group 移除 Skill
+```
+
+---
+
+### 核心操作
+
+```bash
+pull                            # 拉取 Skills 到 Targets
+show                            # 显示项目配置
+status                          # 显示完整状态（项目 + 全局）
+```
+
+---
+
+### 全局配置
+
+```bash
+global show                     # 显示全局配置
+global set-path <path>          # 设置自定义 registry 路径
+global reset-path               # 重置 registry 路径
+global edit                     # 编辑全局配置文件
 ```
 
 ---
@@ -181,15 +270,22 @@ skill-registry pull                   # 拉取 Skills
 ### 示例 1：管理全局 Skills
 
 ```bash
-# 1. 在家目录初始化
+# 1. 初始化全局配置
+skill-registry init -g
+
+# 2. 注册 Skills
+skill-registry skill add -g git+https://github.com/user/skills.git#pua
+skill-registry skill add -g /path/to/local/handoff
+
+# 3. 在家目录初始化
 cd ~
-skill-registry project init
+skill-registry init
 
-# 2. 添加全局 Skills
-skill-registry add pua
-skill-registry add handoff
+# 4. 添加全局 Skills
+skill-registry skill add pua
+skill-registry skill add handoff
 
-# 3. 拉取
+# 5. 拉取
 skill-registry pull
 
 # 结果：~/.claude/skills/pua, ~/.claude/skills/handoff
@@ -202,16 +298,15 @@ skill-registry pull
 ```bash
 # 1. 初始化项目
 cd my-project
-skill-registry project init
+skill-registry init
 
-# 2. 为不同智能体添加 Targets
-skill-registry project target add claude-code
-skill-registry project target add cursor
-skill-registry project target add codex
+# 2. 添加已注册的 Skills
+skill-registry skill add drawio
+skill-registry skill add pua
 
-# 3. 添加 Skills
-skill-registry add drawio
-skill-registry add pua
+# 3. Targets 自动检测（无需手动添加）
+# .claude/ 存在 → claude-code target 自动启用
+# .cursor/ 存在 → cursor target 自动启用
 
 # 4. 拉取
 skill-registry pull
@@ -224,13 +319,14 @@ skill-registry pull
 ### 示例 3：使用 Group
 
 ```bash
-# 1. 创建 Group
-skill-registry group add web-dev
-skill-registry group add web-dev drawio,theme-factory
+# 1. 创建全局 Group
+skill-registry group add -g web-dev
+skill-registry group skill add -g web-dev drawio
+skill-registry group skill add -g web-dev theme-factory
 
 # 2. 应用到项目
 cd my-project
-skill-registry project group add web-dev
+skill-registry group add web-dev
 
 # 3. 拉取
 skill-registry pull
@@ -240,15 +336,30 @@ skill-registry pull
 
 ---
 
-### 示例 4：添加新的智能体
+### 示例 4：恢复误删的 Target
+
+```bash
+# 1. 误删预设
+skill-registry target remove -g claude-code
+
+# 2. 恢复
+skill-registry target restore -g claude-code
+
+# 或恢复所有
+skill-registry target restore -g
+```
+
+---
+
+### 示例 5：添加新的智能体
 
 ```bash
 # 1. 在全局添加新 Target
-skill-registry target add windsurf --path .windsurf/rules
+skill-registry target add -g windsurf --path .windsurf/rules
 
-# 2. 在项目中使用
-cd my-project
-skill-registry project target add windsurf
+# 2. 项目中自动检测
+# 创建 .windsurf/ 目录
+mkdir -p .windsurf
 
 # 3. 拉取
 skill-registry pull
@@ -268,8 +379,10 @@ defaults:
   targets:
     claude-code:
       path: .claude/skills
+      description: Claude Code CLI
     cursor:
       path: .cursor/rules
+      description: Cursor IDE
 
 # 全局 Groups
 groups:
@@ -279,6 +392,10 @@ groups:
 # 全局设置
 settings:
   default_target: claude-code
+
+# 可选：自定义 skills 存储路径
+# registry:
+#   path: /custom/path/to/skills
 ```
 
 ---
@@ -286,15 +403,42 @@ settings:
 ### 项目配置（.skill-registry/config.yaml）
 
 ```yaml
-# 项目 Targets（可选）
-targets:
-  claude-code: {}
-  cursor: {}
-
 # 项目 Skills
 skills:
   - drawio
   - pua
+
+# 项目 Targets（可选）
+targets:
+  claude-code: {}
+  cursor: {}
+```
+
+---
+
+## 错误处理
+
+### 未初始化全局配置
+
+```bash
+$ skill-registry skill list -g
+
+Error: Global skill-registry not initialized.
+
+Run: skill-registry init -g
+Or: skill-registry init -g --path <custom-path>
+```
+
+### 非项目目录
+
+```bash
+$ skill-registry skill add my-skill
+
+Error: Not a skill-registry project.
+
+Options:
+  1. Initialize: skill-registry init
+  2. Use global: skill-registry <command> -g
 ```
 
 ---
@@ -302,15 +446,6 @@ skills:
 ## 设计文档
 
 详细的设计文档请参阅：[docs/README.md](./docs/README.md)
-
----
-
-## 技术栈
-
-- TypeScript/Node.js
-- SQLite (better-sqlite3)
-- Commander.js
-- Inquirer.js
 
 ---
 
