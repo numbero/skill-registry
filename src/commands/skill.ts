@@ -7,7 +7,7 @@ import chalk from 'chalk';
 import * as skillCore from '../core/skill';
 import * as projectCore from '../core/project';
 import { requireProjectContext } from '../lib/context';
-import { formatRelativeTime, truncate } from '../lib/utils';
+import { formatRelativeTime } from '../lib/utils';
 
 export function registerSkillCommand(program: Command): void {
   const skillCommand = program
@@ -125,18 +125,24 @@ export function registerSkillCommand(program: Command): void {
           skills.sort((a, b) => a.name.localeCompare(b.name));
 
           // Display skills
-          const maxName = 20;
-          const maxSource = 30;
+          // Calculate column widths based on actual content
+          const nameWidth = Math.max(...skills.map(s => s.name.length)) + 2;
+          const sourceWidth = Math.max(
+            ...skills
+              .filter(s => s.is_git && s.source)
+              .map(s => s.source!.replace(/.*github\.com\//, '').length),
+            0
+          ) + 2;
 
           for (const skill of skills) {
-            const name = truncate(skill.name, maxName).padEnd(maxName);
+            const name = skill.name.padEnd(nameWidth);
             const type = skill.is_git ? 'git  ' : 'local';
             const source = skill.is_git && skill.source
-              ? truncate(skill.source.replace(/.*github\.com\//, ''), maxSource)
-              : '';
+              ? skill.source.replace(/.*github\.com\//, '').padEnd(sourceWidth)
+              : ' '.repeat(sourceWidth);
             const updated = formatRelativeTime(skill.updated_at);
 
-            console.log(`  ${chalk.cyan(name)}  ${chalk.gray(type)}  ${source.padEnd(maxSource)}  ${chalk.gray(updated)}`);
+            console.log(`  ${chalk.cyan(name)}  ${chalk.gray(type)}  ${source}  ${chalk.gray(updated)}`);
           }
 
           // Summary
